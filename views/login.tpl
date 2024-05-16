@@ -1,25 +1,27 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Регистрация</title>
+    <title>Авторизация</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f2f2f2;
+            text-align: center;
+            margin-top: 50px;
         }
 
-        .register-container {
+        .login-container {
             background-color: white;
             padding: 20px;
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             max-width: 400px;
-            margin: 50px auto;
+            margin: 0 auto;
         }
 
-        input[type=text], input[type=password] {
+        input[type="text"], input[type="password"] {
             width: 100%;
-            padding: 12px 20px;
+            padding: 12px;
             margin: 8px 0;
             display: inline-block;
             border: 1px solid #ccc;
@@ -45,21 +47,24 @@
         .error-message {
             color: red;
             font-weight: bold;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="register-container">
-        <h2>Регистрация</h2>
+    <div class="login-container">
+        <h2>Авторизация</h2>
         {{if .ErrorMessage}}
             <p class="error-message">{{.ErrorMessage}}</p>
         {{end}}
-        <form action="/register" method="post">
+        <form action="/login" method="post">
             <input type="text" name="username" placeholder="Имя пользователя" required>
+            <br>
             <input type="password" name="password" placeholder="Пароль" required>
-            <button type="submit">Зарегистрироваться</button>
+            <br>
+            <button type="submit">Войти</button>
         </form>
-        <p>Уже есть аккаунт? <a href="/login">Войти</a></p>
+        <p>Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
     </div>
 </body>
 </html>

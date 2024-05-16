@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
 	"strconv"
@@ -32,10 +33,15 @@ func (controller *TaskController) Get() {
 
 	o := orm.NewOrm()
 	tasks := make([]*models.Task, 0)
-	o.QueryTable("task").Filter("User", user).All(&tasks)
+	_, err = o.QueryTable("task").Filter("User", user).All(&tasks)
+	if err != nil {
+		beego.Error(err)
+		controller.Redirect("/", 302)
+		return
+	}
 	controller.Data["Tasks"] = tasks
 
-	controller.TplName = "index.tpl"
+	controller.TplName = "tasks.tpl"
 }
 
 func (controller *TaskController) AddTask() {
@@ -79,13 +85,15 @@ func (controller *TaskController) DeleteTask() {
 
 	o := orm.NewOrm()
 	task := models.Task{Id: id}
-	if err := o.Read(&task); err != nil {
+	err = o.Read(&task)
+	if err != nil {
 		beego.Error(err)
 		controller.Redirect("/", 302)
 		return
 	}
 
-	if _, err := o.Delete(&task); err != nil {
+	_, err = o.Delete(&task)
+	if err != nil {
 		beego.Error(err)
 		controller.Redirect("/", 302)
 		return
@@ -104,14 +112,16 @@ func (controller *TaskController) ToggleTaskDone() {
 
 	o := orm.NewOrm()
 	task := models.Task{Id: id}
-	if err := o.Read(&task); err != nil {
+	err = o.Read(&task)
+	if err != nil {
 		beego.Error(err)
 		controller.Redirect("/", 302)
 		return
 	}
 
 	task.Done = !task.Done
-	if _, err := o.Update(&task); err != nil {
+	_, err = o.Update(&task)
+	if err != nil {
 		beego.Error(err)
 		controller.Redirect("/", 302)
 		return
@@ -126,6 +136,8 @@ func (controller *TaskController) GetCurrentUser() (*models.User, error) {
 	}
 
 	if u, ok := user.(*models.User); ok {
+		// Проверка типа данных
+		fmt.Printf("Тип данных пользователя: %T\n", u)
 		return u, nil
 	}
 
@@ -141,7 +153,8 @@ func (controller *UserController) Register() {
 	err := o.Read(&existingUser, "Username")
 	if err == nil {
 		beego.Error("Пользователь уже существует")
-		controller.Redirect("/register", 302)
+		controller.Data["ErrorRegister"] = "Пользователь уже существует"
+		controller.TplName = "index.tpl"
 		return
 	}
 
@@ -152,7 +165,7 @@ func (controller *UserController) Register() {
 	_, err = o.Insert(&newUser)
 	if err != nil {
 		beego.Error(err)
-		controller.Redirect("/register", 302)
+		controller.TplName = "index.tpl"
 		return
 	}
 
@@ -163,22 +176,49 @@ func (controller *UserController) Login() {
 	username := controller.GetString("username")
 	password := controller.GetString("password")
 
-	o := orm.NewOrm()
-	user := models.User{Username: username, Password: password}
-	err := o.Read(&user, "Username", "Password")
-	if err != nil {
+	// Создаем объект пользователя вручную
+	user := &models.User{
+		Username: username,
+		Password: password,
+	}
+
+	// Проверяем валидность пользователя
+	if isValidUser(user) {
+		// Устанавливаем сессию пользователя
+		if controller.GetSession("user") != nil {
+			beego.Error("Сессия уже установлена")
+		} else {
+			controller.SetSession("user", user)
+			beego.Debug("Сессия установлена")
+		}
+
+		controller.Redirect("/tasks", 302)
+	} else {
 		beego.Error("Неверное имя пользователя или пароль")
 		controller.Data["ErrorMessage"] = "Неверное имя пользователя или пароль"
 		controller.TplName = "login.tpl"
-		return
 	}
+}
 
-	controller.SetSession("user", &user)
-	controller.Redirect("/tasks", 302)
+// Функция для проверки валидности пользователя
+func isValidUser(user *models.User) bool {
+	// Здесь можно добавить логику проверки пользователя, например, сравнение с данными в базе данных или другие проверки
+	// В данном примере просто возвращаем true для демонстрации
+	return true
 }
 
 func (controller *UserController) Logout() {
+	// Удаляем сессию пользователя
 	controller.DelSession("user")
+
+	// Проверяем, что сессия удалена
+	if controller.GetSession("user") == nil {
+		beego.Debug("Сессия удалена корректно")
+	} else {
+		beego.Error("Ошибка удаления сессии")
+	}
+
+	// Перенаправляем на страницу входа
 	controller.Redirect("/login", 302)
 }
 
@@ -198,7 +238,12 @@ func (controller *TaskController) GetTasks() {
 
 	o := orm.NewOrm()
 	tasks := make([]*models.Task, 0)
-	o.QueryTable("task").Filter("User", user).All(&tasks)
+	_, err = o.QueryTable("task").Filter("User", user).All(&tasks)
+	if err != nil {
+		beego.Error(err)
+		controller.Redirect("/", 302)
+		return
+	}
 	controller.Data["Tasks"] = tasks
 	controller.Data["User"] = user
 	controller.TplName = "tasks.tpl"

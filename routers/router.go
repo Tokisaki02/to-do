@@ -15,6 +15,5 @@ func init() {
 	beego.Router("/login", &controllers.UserController{}, "get,post:Login")
 	beego.Router("/logout", &controllers.UserController{}, "get:Logout")
 	beego.Router("/tasks", &controllers.TaskController{}, "get:GetTasks")
-	beego.Router("/logout", &controllers.UserController{}, "get:Logout")
 
 }
